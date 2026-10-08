@@ -1,14 +1,47 @@
-# 游戏实时翻译器（macOS / Windows）
+# 游戏实时翻译器 · Game Translator
 
-框选游戏画面上的一块区域，程序持续盯着它：**画面一变就自动截图 → 交给 DeepSeek 视觉模型
-一次完成 OCR + 日译中 → 把中文字幕贴在框选区域的正下方**。
+**框选游戏画面的一块区域，日文一出就自动翻成中文，中文字幕直接盖在游戏上。**
 
-用的模型是 `deepseek-flash`，走 Responses API，截图以 `input_image` 内容块直接传给模型，
-所以**不需要在本机安装任何 OCR 引擎**（不用 PaddleOCR / manga-ocr / torch）。
+这是一个给**日文游戏玩家**用的实时翻译工具。玩 galgame、视觉小说（visual novel）、JRPG、
+文字冒险游戏（AVG）遇到满屏日文「生肉」看不懂时，不用手动截图、也不用复制粘贴到翻译网站 ——
+框一次区域，之后游戏里出现的每一句对话都会自动变成中文字幕贴在你眼前。
+
+比传统「截图 → 丢进翻译软件」强在哪：
+
+- **不用手动截**：画面一变就自动翻，你只管玩
+- **一句话只翻一次**：游戏用打字机效果逐字显示对话时，它会等整句显示完再翻，不会翻到半句话
+- **不用装任何本地 OCR**：截图直接交给 DeepSeek 视觉模型，一次完成「识别日文 + 翻成中文」，
+  不需要 PaddleOCR / manga-ocr / torch 那一大堆东西
+- **字幕盖在游戏上**：字幕条用系统原生最高层级，全屏游戏也能盖住；并且鼠标穿透，不挡你点游戏
+- **省钱可控**：本地比对画面变化，只有真的变了才发请求；还能选手动模式，点一下才翻一次
+
+**适用平台**：macOS / Windows。**适用游戏**：窗口化或无边框窗口运行的日文游戏。
+
+> **关键词 / Keywords**：游戏翻译 · galgame 汉化 · galgame 实时翻译 · visual novel 翻译 ·
+> 视觉小说汉化 · 日文游戏翻译 · 生肉汉化 · JRPG 翻译 · AVG 文字冒险 · 游戏字幕翻译 ·
+> 屏幕翻译 · 实时字幕翻译 · OCR 翻译 · DeepSeek 视觉翻译 · 日语翻译 · 游戏机翻 ·
+> 无边框窗口游戏翻译 · 无需本地 OCR
 
 ---
 
-## 一、快速开始
+## 一、下载安装
+
+到 **[Releases](https://github.com/cy3329520/game-translator/releases)** 页面下载对应系统的压缩包：
+
+| 系统 | 文件 | 用法 |
+|---|---|---|
+| macOS | `GameTranslator-macOS.zip` | 解压后双击 `GameTranslator.app` |
+| Windows | `GameTranslator-Windows.zip` | 解压后双击 `GameTranslator.exe` |
+
+> 首次打开若被系统拦截（macOS 提示「无法验证开发者」/ Windows SmartScreen 警告），
+> 是因为包没有代码签名。macOS 到「系统设置 → 隐私与安全性」点「仍要打开」；
+> Windows 点「更多信息 → 仍要运行」。
+
+也可以直接用源码跑（见下节）。
+
+---
+
+## 二、从源码运行
 
 最省事的方式：在访达里双击 **`start.command`**（macOS 会用「终端」打开并启动）。
 
@@ -22,7 +55,6 @@ cd ~/game-translator
 ```
 
 首次运行会自动建虚拟环境并装依赖（`mss` / `Pillow` / `requests` / `pynput`），之后直接启动。
-依赖已经装好了，直接启动即可。
 
 启动后三步走：
 
@@ -39,7 +71,7 @@ cd ~/game-translator
 
 ---
 
-## 二、系统权限（第一次必须做）
+## 三、系统权限（第一次必须做）
 
 ### Windows
 Windows 不需要额外授权。如果截图预览是黑屏/纯色，通常是安全软件或显卡驱动拦截了屏幕捕获，
@@ -69,7 +101,7 @@ Windows 不需要额外授权。如果截图预览是黑屏/纯色，通常是�
 
 ---
 
-## 三、界面说明
+## 四、界面说明
 
 ### 翻译页
 - **API Key**：本地保存在 `~/.game-translator/config.json`，不会上传到任何地方。
@@ -179,7 +211,7 @@ Windows 不需要额外授权。如果截图预览是黑屏/纯色，通常是�
 
 ---
 
-## 四、调参建议
+## 五、调参建议
 
 **嫌慢？**
 - 思考模式选「关闭」
@@ -204,7 +236,7 @@ Windows 不需要额外授权。如果截图预览是黑屏/纯色，通常是�
 
 ---
 
-## 五、已知限制
+## 六、已知限制
 
 - **推荐游戏用「窗口化 / 无边框窗口」运行**。程序已用原生 API 把字幕拉到最高层级并跟随全屏
   Space，多数情况下能盖在游戏上；但少数使用**独占全屏**的游戏，系统层面就不允许别的窗口覆盖，
@@ -218,16 +250,18 @@ Windows 不需要额外授权。如果截图预览是黑屏/纯色，通常是�
 
 ---
 
-## 六、文件结构
+## 七、文件结构
 
 ```
 game-translator/
 ├── start.command       双击启动（macOS 用「终端」打开并运行）
+├── start.bat           双击启动（Windows）
 ├── run.sh              一键启动（自动建 venv + 装依赖）
 ├── app.py              程序入口
 ├── selfcheck.py        无 GUI 自检脚本
 ├── requirements.txt
 ├── README.md
+├── .github/workflows/build.yml   打 tag 时自动打包 macOS / Windows
 └── src/
     ├── config.py         配置读写 + 翻译提示词
     ├── deepseek.py       Responses API 客户端（流式 SSE，一次完成 OCR + 翻译）
@@ -241,9 +275,15 @@ game-translator/
 
 配置文件：`~/.game-translator/config.json`（删掉它即可恢复默认设置）
 
+### 自己打包（可选）
+
+仓库已配好 GitHub Actions：**打一个 `v*` 标签**（如 `git tag v1.0.0 && git push --tags`）
+就会自动为 macOS 和 Windows 各打一个包，附到 Releases 页面。
+也可以到仓库的 Actions 页面点「Run workflow」手动跑一次，产物在 Artifacts 里下载。
+
 ---
 
-## 七、常见问题
+## 八、常见问题
 
 **Q：报「无法连接 http://127.0.0.1:xxxx」或 Connection refused？**
 「接口地址」被改成了本地地址。到「翻译」页把「接口地址」改回 `https://api.deepseek.com` 即可。

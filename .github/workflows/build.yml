@@ -1,0 +1,92 @@
+name: Build Release
+
+# 打 v* 标签时自动为 macOS 和 Windows 各打一个可执行包，并附到 Release 上。
+# 也可以到 Actions 页面点「Run workflow」手动跑一次（只上传 artifact，不发 Release）。
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build-macos:
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: 打包
+        env:
+          # 官方 macOS Python 的 Tcl/Tk 需要在打包时显式告知，否则 .app 启动即崩
+          TCL_LIBRARY: ${{ github.workspace }}/.tcl/tcl8.6
+          TK_LIBRARY: ${{ github.workspace }}/.tcl/tk8.6
+        run: |
+          TCLDIR=$(python -c "import sys,os,glob;b=sys.base_prefix;p=os.path.join(b,'lib');d=[x for x in glob.glob(p+'/tcl8*') if not x.endswith('tk8.6')];print(d[0] if d else '')")
+          if [ -n "$TCLDIR" ]; then
+            mkdir -p .tcl
+            cp -R "$TCLDIR" .tcl/
+            cp -R "${TCLDIR%tcl8.6}tk8.6" .tcl/ 2>/dev/null || true
+          fi
+          pyinstaller --noconfirm --clean --windowed --name GameTranslator \
+            --osx-bundle-identifier com.cy3329520.gametranslator \
+            --hidden-import=pynput.keyboard._darwin \
+            --hidden-import=pynput.mouse._darwin \
+            app.py
+          cd dist && zip -ry GameTranslator-macOS.zip GameTranslator.app
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameTranslator-macOS
+          path: dist/GameTranslator-macOS.zip
+
+      - name: 附到 Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/GameTranslator-macOS.zip
+
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: 安装依赖
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pyinstaller
+
+      - name: 打包
+        run: |
+          pyinstaller --noconfirm --clean --windowed --name GameTranslator `
+            --hidden-import=pynput.keyboard._win32 `
+            --hidden-import=pynput.mouse._win32 `
+            app.py
+          Compress-Archive -Path dist/GameTranslator -DestinationPath dist/GameTranslator-Windows.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: GameTranslator-Windows
+          path: dist/GameTranslator-Windows.zip
+
+      - name: 附到 Release
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/GameTranslator-Windows.zip
